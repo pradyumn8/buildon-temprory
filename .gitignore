@@ -50,3 +50,7 @@ next-env.d.ts
 # The versions in supabase/migrations/ carry placeholders on purpose; these
 # are the filled-in copies and must never be committed.
 /supabase/ready/
+
+# A CSV export of the translations table, for building while Supabase is
+# unreachable. See scripts/i18n-snapshot.mjs.
+/supabase/snapshot/

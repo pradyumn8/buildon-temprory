@@ -201,7 +201,7 @@ export default function EnquiryForm({
       source: origin,
       page: window.location.pathname,
     }).then(
-      () => {
+      (via) => {
         /* Stored. Everything after this point is housekeeping, and none of it
            may reach the catch below — a thrown reset would otherwise open a
            mail draft for an enquiry that is already in the database, and the
@@ -209,7 +209,8 @@ export default function EnquiryForm({
         setStatus("sent");
         try {
           form.reset();
-          notifyHost(data);
+          /* Netlify already has it when it was the one that took it. */
+          if (via === "database") notifyHost(data);
         } catch {
           /* Nothing here is worth telling the visitor about. */
         }

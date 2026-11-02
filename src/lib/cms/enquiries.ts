@@ -17,6 +17,7 @@
  * before they press send.
  */
 
+import { ENQUIRY_FORM } from "@/components/NetlifyForms";
 import { supabase } from "./supabase";
 
 export type Enquiry = {
@@ -63,12 +64,81 @@ const orNull = (value: string | undefined) => {
 };
 
 /**
+ * Hand the enquiry to Netlify Forms instead, when the database refused it.
+ *
+ * On 2 November 2026 the Supabase project was restricted for egress, and every
+ * enquiry on the site fell through to a mail draft — which on a desktop with
+ * no mail client is nothing at all. Netlify was already registered to receive
+ * this form (NetlifyForms.tsx) and emails the desk from it, so a refused
+ * insert now goes there and still reaches someone. It does not reach the admin
+ * panel; it is in Netlify → Forms.
+ *
+ * Only the fields the hidden form lists survive the trip, so quantity and
+ * place are written into the message rather than lost.
+ *
+ * Not on localhost: there is no Netlify there, and the dev server answers any
+ * POST with 200, which would read as delivered.
+ */
+async function sendToNetlify(entry: NewEnquiry) {
+  if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)) {
+    throw new Error("no-host");
+  }
+
+  const extra = [
+    entry.quantity ? `Quantity: ${entry.quantity} bags` : "",
+    entry.city || entry.country
+      ? `Place: ${[entry.city, entry.country].filter(Boolean).join(", ")}`
+      : "",
+  ].filter(Boolean);
+
+  const body = new URLSearchParams({
+    "form-name": ENQUIRY_FORM,
+    name: entry.name.trim(),
+    email: entry.email.trim(),
+    phone: entry.phone.trim(),
+    company: entry.company?.trim() ?? "",
+    enquiryType: entry.enquiryType?.trim() ?? "",
+    product: entry.product?.trim() ?? "",
+    message: [entry.message.trim(), ...(extra.length ? ["", ...extra] : [])].join("\n"),
+    source: entry.source?.trim() ?? "",
+    page: entry.page?.trim() ?? "",
+  });
+
+  const response = await fetch("/", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+  /* Netlify answers 404 for a form it has not registered, so a 2xx here is
+     a submission it actually kept. */
+  if (!response.ok) throw new Error(`netlify-${response.status}`);
+}
+
+/**
  * Record an enquiry.
  *
- * Throws on failure so the form can fall back to a mail draft rather than
- * telling someone their message was received when it was not.
+ * Resolves to where it went: "database", or "netlify" when the database
+ * refused it and Netlify Forms took it instead — in which case Netlify has
+ * already been told, and the caller must not tell it a second time.
+ *
+ * Throws only when neither kept it, so the form can fall back to a mail draft
+ * rather than telling someone their message was received when it was not.
  */
-export async function submitEnquiry(entry: NewEnquiry) {
+export async function submitEnquiry(entry: NewEnquiry): Promise<"database" | "netlify"> {
+  try {
+    await insertEnquiry(entry);
+    return "database";
+  } catch (error) {
+    try {
+      await sendToNetlify(entry);
+      return "netlify";
+    } catch {
+      throw error;
+    }
+  }
+}
+
+async function insertEnquiry(entry: NewEnquiry) {
   if (!supabase) throw new Error("not-configured");
 
   const { error } = await supabase.from("enquiries").insert({

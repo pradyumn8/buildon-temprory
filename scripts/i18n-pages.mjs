@@ -319,8 +319,48 @@ const fresh = new Set();
 const stale = new Set();
 const pinKey = (locale, source) => `${locale}\u0000${source}`;
 
+/* A CSV export of the table, saved by `npm run i18n:snapshot`, for when the
+   database cannot be read — the project restricted for egress, say, which
+   otherwise ships /mr and /hi in English with every translation intact in a
+   table nobody can reach. Gitignored, local only. */
+const SNAPSHOT = "supabase/snapshot/translations.json";
+/* Set once the snapshot has stood in for the table. Nothing is translated
+   then: a new translation could not be saved, so it would spend quota on a
+   string that is English again on the next run. */
+let offline = false;
+
+function readSnapshot(reason) {
+  if (!existsSync(SNAPSHOT)) return null;
+  const { savedAt, rows } = JSON.parse(readFileSync(SNAPSHOT, "utf8"));
+  if (!offline) {
+    console.warn(`\n   Supabase unreadable (${reason.slice(0, 120)})`);
+    console.warn(`   Using ${SNAPSHOT}, saved ${savedAt} — ${rows.length.toLocaleString()} rows. Nothing new is translated.\n`);
+  }
+  offline = true;
+  return rows;
+}
+
 async function readCache() {
   const byLocale = new Map(LOCALES.map((locale) => [locale, new Map()]));
+
+  const ingest = (row) => {
+    byLocale.get(row.locale)?.set(row.source, row.translated);
+    if (row.provider !== "gemini" && row.provider !== "azure") {
+      pinned.add(pinKey(row.locale, row.source));
+    }
+    if (since !== null && Date.parse(row.updated_at) >= since) {
+      /* Already carries the current wording. Nothing to redo. */
+      fresh.add(pinKey(row.locale, row.source));
+    }
+    if (staleOnly && latinLeftIn(row.translated).length) {
+      stale.add(pinKey(row.locale, row.source));
+    }
+  };
+
+  if (offline) {
+    readSnapshot("").forEach(ingest);
+    return byLocale;
+  }
 
   /* In pages: PostgREST caps a response, and asking for six thousand rows in
      one go silently returns the first thousand.
@@ -346,26 +386,26 @@ async function readCache() {
       .range(from, from + 999);
 
     if (error) {
+      /* Start again from the snapshot rather than mixing it with the pages
+         already read: one source per run, so the counts below mean something. */
+      const rows = readSnapshot(error.message);
+      if (rows) {
+        byLocale.forEach((map) => map.clear());
+        pinned.clear();
+        fresh.clear();
+        stale.clear();
+        rows.forEach(ingest);
+        return byLocale;
+      }
       stop(
         /schema cache|does not exist/i.test(error.message)
           ? "The translations table is missing. Run supabase/migrations/0008_translations.sql."
           : `Could not read the cache — ${error.message}`,
+        `Or export the table as CSV and run npm run i18n:snapshot -- <file>.`,
       );
     }
     if (!data?.length) break;
-    for (const row of data) {
-      byLocale.get(row.locale)?.set(row.source, row.translated);
-      if (row.provider !== "gemini" && row.provider !== "azure") {
-        pinned.add(pinKey(row.locale, row.source));
-      }
-      if (since !== null && Date.parse(row.updated_at) >= since) {
-        /* Already carries the current wording. Nothing to redo. */
-        fresh.add(pinKey(row.locale, row.source));
-      }
-      if (staleOnly && latinLeftIn(row.translated).length) {
-        stale.add(pinKey(row.locale, row.source));
-      }
-    }
+    data.forEach(ingest);
     if (data.length < 1000) break;
   }
 
@@ -401,7 +441,11 @@ if (dry) {
 
 /* ------------------------------------------------------------ translating */
 
-if (!applyOnly && todo.length > 0) {
+if (offline && !applyOnly && todo.length > 0) {
+  console.warn(`   ${todo.length.toLocaleString()} strings not in the snapshot stay English until Supabase is back.\n`);
+}
+
+if (!applyOnly && !offline && todo.length > 0) {
   const providers = readProviders(env);
   if (providers.found.length === 0) {
     /* Not fatal when the cache answered. 9,159 strings came back and 40 did
@@ -588,7 +632,9 @@ if (!applyOnly && todo.length > 0) {
 
    Written on every run, including the ones that finish the job, because 0 is
    the answer that stops the workflow rebuilding for nothing. */
-{
+/* Not from a snapshot: the number would be about an old export, and the table
+   it is written to is the one that could not be reached. */
+if (!offline) {
   const have = await readCache();
   const pending = LOCALES.reduce(
     (n, locale) => n + all.filter((text) => !have.get(locale).has(text)).length,
