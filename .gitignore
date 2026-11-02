@@ -53,4 +53,6 @@ next-env.d.ts
 
 # A CSV export of the translations table, for building while Supabase is
 # unreachable. See scripts/i18n-snapshot.mjs.
-/supabase/snapshot/
+# Committed for now: the Render preview builds from git and cannot reach
+# Supabase, so this is the only copy of the translations it can see.
+# /supabase/snapshot/
