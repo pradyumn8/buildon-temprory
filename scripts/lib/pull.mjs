@@ -54,7 +54,20 @@ export function readEnv() {
  * pull that changes nothing keeps the working tree clean and `git status`
  * stays meaningful.
  */
-export async function pull({ log = () => {} } = {}) {
+/* The updated_at each section carried the last time it was read, so a watcher
+   can ask what changed instead of asking for everything. Module-level because
+   it belongs to the process doing the polling, not to any one call. */
+const seen = new Map();
+
+/**
+ * @param onlyIfChanged  Ask for timestamps first and read the content only if
+ *   one moved. The watcher polls every five seconds for hours, and the whole
+ *   content table is 0.8 MB: pulling it every tick is 0.58 GB an hour, which
+ *   is a free tier's entire monthly egress in a working day. Measured here
+ *   after that quota was actually exhausted and the project was cut off.
+ *   Timestamps for six sections are about 400 bytes — two thousand times less.
+ */
+export async function pull({ log = () => {}, onlyIfChanged = false } = {}) {
   const { url, key, configured } = readEnv();
   if (!configured) return { ok: false, reason: "Supabase is not configured.", written: [] };
 
@@ -64,12 +77,24 @@ export async function pull({ log = () => {} } = {}) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data, error } = await supabase.from("content").select("key, data");
+  if (onlyIfChanged && seen.size > 0) {
+    const stamps = await supabase.from("content").select("key, updated_at");
+    if (stamps.error) {
+      return { ok: false, reason: `Could not read content — ${stamps.error.message}`, written: [] };
+    }
+    const moved = (stamps.data ?? []).some((row) => seen.get(row.key) !== row.updated_at);
+    /* Nothing has changed, so there is nothing to write and nothing to say. */
+    if (!moved) return { ok: true, written: [] };
+  }
+
+  const { data, error } = await supabase.from("content").select("key, data, updated_at");
 
   if (error) return { ok: false, reason: `Could not read content — ${error.message}`, written: [] };
   if (!data || data.length === 0) {
     return { ok: false, reason: "The content table is empty. Run `npm run db:push` first.", written: [] };
   }
+
+  for (const row of data) seen.set(row.key, row.updated_at);
 
   mkdirSync(OUT, { recursive: true });
   const written = [];

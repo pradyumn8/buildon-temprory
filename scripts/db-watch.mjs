@@ -12,6 +12,13 @@
  * replication switched on for the table and a socket held open, which is a lot
  * of moving parts for a few seconds' difference on a tool one person uses at a
  * time. Five seconds is below the threshold where anyone reaches for refresh.
+ *
+ * What a tick costs is the part to be careful about. This used to read the
+ * whole content table every five seconds — 0.8 MB a tick, 0.58 GB an hour,
+ * which spends a free tier's 5 GB monthly egress in a working day and gets the
+ * project cut off mid-sentence. It now asks for timestamps and reads the
+ * content only when one has moved, so an idle watcher costs about 400 bytes a
+ * tick and a day of it is a few megabytes.
  */
 
 import { pull } from "./lib/pull.mjs";
@@ -29,7 +36,7 @@ let lastProblem = null;
 
 async function tick() {
   try {
-    const { ok, reason, written } = await pull();
+    const { ok, reason, written } = await pull({ onlyIfChanged: true });
 
     if (!ok) {
       if (reason !== lastProblem) {
