@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  DEMO_MODE,
   loadProfile,
   requestPasswordReset,
   RESET_PATH,
@@ -138,7 +139,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
      them would change the hook order between renders. */
   if (pathname === RESET_PATH) return <>{children}</>;
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured && !DEMO_MODE) {
     return (
       <Shell title="The database is not configured">
         <p className="text-[15px] leading-relaxed text-ink-500">
@@ -494,6 +495,12 @@ function LoginScreen({ onSignedIn }: { onSignedIn: () => Promise<void> }) {
 
   return (
     <Shell title="Buildon Admin">
+      {DEMO_MODE && (
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900">
+          Demo mode — any email and password opens the panel. The database is
+          offline, so lists will be empty and nothing can be saved.
+        </p>
+      )}
       <form onSubmit={submit} className="space-y-4">
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold text-ink-900">Email</span>

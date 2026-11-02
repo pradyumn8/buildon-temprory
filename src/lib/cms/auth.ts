@@ -17,6 +17,27 @@ import { can, describeRole, type AdminRole, type Capability } from "./roles";
 export type { AdminRole };
 export { describeRole };
 
+/**
+ * Demo sign-in, for showing the panel while Supabase is unreachable.
+ *
+ * Added on 2 November 2026, when the project was restricted for egress and
+ * nobody could sign in at all. With NEXT_PUBLIC_ADMIN_DEMO=1 any email and
+ * password opens the panel as a super admin, without asking Supabase. It
+ * unlocks screens, not data: every list still reads from the database and
+ * every save is still refused by it, so this shows the panel and nothing in
+ * it. Turn it off once the project is restored.
+ */
+export const DEMO_MODE = process.env.NEXT_PUBLIC_ADMIN_DEMO === "1";
+const DEMO_KEY = "buildon-admin-demo";
+
+function demoEmail() {
+  try {
+    return sessionStorage.getItem(DEMO_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export type AdminProfile = {
   readonly id: string;
   readonly email: string;
@@ -51,6 +72,16 @@ export async function loadProfile(): Promise<{
   profile: AdminProfile | null;
   email: string | null;
 }> {
+  if (DEMO_MODE) {
+    const email = demoEmail();
+    if (!email) return { signedIn: false, profile: null, email: null };
+    return {
+      signedIn: true,
+      profile: { id: "demo", email, role: "super_admin", place_id: null },
+      email,
+    };
+  }
+
   if (!supabase) return { signedIn: false, profile: null, email: null };
 
   const { data: sessionData } = await supabase.auth.getSession();
@@ -77,6 +108,17 @@ export async function loadProfile(): Promise<{
 }
 
 export async function signIn(email: string, password: string) {
+  if (DEMO_MODE) {
+    try {
+      sessionStorage.setItem(DEMO_KEY, email.trim() || "demo@buildon.co.in");
+    } catch {
+      /* Private window with storage blocked: the demo cannot remember the
+         sign-in, so say so rather than appearing to do nothing. */
+      throw new Error("This browser is blocking storage, so the demo cannot sign in.");
+    }
+    return;
+  }
+
   if (!supabase) throw new Error("The database is not configured.");
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -159,6 +201,12 @@ export async function setNewPassword(password: string) {
 }
 
 export async function signOut() {
+  if (DEMO_MODE) {
+    try {
+      sessionStorage.removeItem(DEMO_KEY);
+    } catch {}
+    return;
+  }
   await supabase?.auth.signOut();
 }
 
