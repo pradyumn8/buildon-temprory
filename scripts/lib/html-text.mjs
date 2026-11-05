@@ -76,9 +76,9 @@ export function translatable(text) {
   if (/^(https?:|mailto:|tel:|data:|#|\/)/.test(value)) return false;
   if (/^[\w.-]+\.(webp|png|jpe?g|svg|mp4|pdf|docx?|css|js)$/i.test(value)) return false;
   if (/^[a-z0-9]+(-[a-z0-9]+)+$/.test(value)) return false;
-  /* Already Devanagari: a page being re-applied, or a brand that is written
-     that way to begin with. */
-  if (/[ऀ-ॿ]/.test(value)) return false;
+  /* Already translated — Devanagari, Telugu or Kannada: a page being
+     re-applied, or a brand that is written that way to begin with. */
+  if (/[ऀ-ॿఀ-೿]/.test(value)) return false;
   return true;
 }
 
@@ -523,7 +523,7 @@ function mapPayload(html, transform) {
 
 /* English lives at the root; these two have prefixes. Same list as
    src/lib/i18n/config.ts, which cannot be imported from a build script. */
-const LOCALE_PREFIX = /^\/(mr|hi)(?=\/|$)/;
+const LOCALE_PREFIX = /^\/(mr|hi|te|kn)(?=\/|$)/;
 
 /* Not pages: Next's own assets, the single-language admin, and anything that
    is a file rather than a route. */
@@ -651,10 +651,10 @@ export function alternates(html, page, origin, locale = "en") {
     locale === "en" ? origin + (slug || "/") : origin + "/" + locale + slug;
 
   const links = [
-    ...["en", "mr", "hi"].map(
+    ...["en", "mr", "hi", "te", "kn"].map(
       (locale) =>
         '<link rel="alternate" hreflang="' +
-        { en: "en-IN", mr: "mr-IN", hi: "hi-IN" }[locale] +
+        { en: "en-IN", mr: "mr-IN", hi: "hi-IN", te: "te-IN", kn: "kn-IN" }[locale] +
         '" href="' + href(locale) + '"/>',
     ),
     '<link rel="alternate" hreflang="x-default" href="' + href("en") + '"/>',

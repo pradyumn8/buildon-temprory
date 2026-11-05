@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { chat, productCatalogue, site } from "@/lib/content";
 import { submitEnquiry } from "@/lib/cms/enquiries";
+import { branches, rememberedBranch } from "@/lib/branches";
 import { toDigits } from "@/lib/phone";
 import { lookupPlace, warmPlace } from "@/lib/geo";
 import { getDictionary } from "@/lib/i18n";
@@ -290,6 +291,32 @@ export default function ChatWidget({
   /** Ask the step at `index`, with its suggestions under it. */
   function ask(index: number, answers: Record<string, string>) {
     const step = steps[index];
+
+    /* The branch question offers the branches that sell the product just
+       picked — or every branch when the product was typed or "not sure" —
+       and starts with the one chosen on the products page, if any. */
+    if (step.field === "branch") {
+      const slug = productCatalogue.find((item) => item.name === answers.product)?.slug;
+      const sellers = slug ? branches.filter((b) => b.products.includes(slug)) : branches;
+      const first = rememberedBranch();
+      const ordered = [...sellers].sort((a, b) => Number(b.id === first) - Number(a.id === first));
+      say(step.ask, { choices: ordered.map((b) => b.name), skippable: true });
+      return;
+    }
+
+    /* With a known branch, the quantity question quotes its minimum and offers
+       it as a one-tap answer; anything typed instead still counts. */
+    const branch = branches.find((b) => b.name === answers.branch);
+    if (step.field === "quantity" && branch) {
+      say(
+        t.chat.ask.quantityAt
+          .replace("{branch}", branch.name)
+          .replace("{tons}", String(branch.minTons)),
+        { choices: [String(branch.minTons)], skippable: true },
+      );
+      return;
+    }
+
     say(step.ask.replace("{name}", answers.name ?? ""), {
       choices: "choices" in step ? step.choices : undefined,
       skippable: isOptional(step),
@@ -308,6 +335,7 @@ export default function ChatWidget({
     /* Quantity is not here: it has a column of its own since 0025. */
     const lines = [
       answers.product ? `Product: ${answers.product}` : "",
+      answers.branch ? `Branch: ${answers.branch}` : "",
       answers.place ? `Site: ${answers.place}` : "",
       answers.timeline ? `Needed: ${answers.timeline}` : "",
     ].filter(Boolean);

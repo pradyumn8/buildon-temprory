@@ -85,7 +85,7 @@ async function sendToNetlify(entry: NewEnquiry) {
   }
 
   const extra = [
-    entry.quantity ? `Quantity: ${entry.quantity} bags` : "",
+    entry.quantity ? `Quantity: ${entry.quantity} tons` : "",
     entry.city || entry.country
       ? `Place: ${[entry.city, entry.country].filter(Boolean).join(", ")}`
       : "",

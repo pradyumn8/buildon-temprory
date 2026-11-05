@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { contact, site } from "@/lib/content";
+import { contact, productCatalogue, site } from "@/lib/content";
+import { branches, rememberedBranch } from "@/lib/branches";
 import { submitEnquiry } from "@/lib/cms/enquiries";
 import { keepDigits } from "@/lib/phone";
 import { lookupPlace, warmPlace } from "@/lib/geo";
@@ -77,6 +78,53 @@ export default function EnquiryForm({
      else it asks. Everything else is read out of the FormData on submit; this
      one has to be known while the form is still being filled in. */
   const [product, setProduct] = useState(defaultProduct ?? "");
+
+  /* The branch, and the quantity it presets.
+
+     Choosing a branch fills in its minimum order, which is the number most
+     enquiries would type anyway; it stays an ordinary field, so anyone who
+     needs more simply changes it. Offered only the branches that sell the
+     chosen product, so the form cannot ask for something that is not there. */
+  const words = getDictionary(localeOf(usePathname() ?? "/")).branches;
+  const slug = productCatalogue.find((item) => item.name === product)?.slug;
+  const sellers = slug ? branches.filter((branch) => branch.products.includes(slug)) : [];
+  const [branchName, setBranchName] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const branch = sellers.find((entry) => entry.name === branchName) ?? null;
+
+  function pickBranch(name: string) {
+    setBranchName(name);
+    const chosen = branches.find((entry) => entry.name === name);
+    if (chosen) setQuantity(String(chosen.minTons));
+  }
+
+  function pickProduct(name: string) {
+    setProduct(name);
+    const nextSlug = productCatalogue.find((item) => item.name === name)?.slug;
+    const available = nextSlug ? branches.filter((b) => b.products.includes(nextSlug)) : [];
+    /* Keep the branch if it still sells this product; otherwise start from
+       the one picked on the products page, if that one does. */
+    const keep = available.find((b) => b.name === branchName);
+    const remembered = available.find((b) => b.id === rememberedBranch());
+    /* A kept branch keeps whatever quantity was typed against it. */
+    if (keep) return;
+    if (remembered) pickBranch(remembered.name);
+    else if (branchName) setBranchName("");
+  }
+
+  /* Opened from a product page with the product already chosen: preset from
+     the branch picked on the products page, once, after mount — the remembered
+     branch lives in sessionStorage, which the static render cannot read. */
+  useEffect(() => {
+    if (!defaultProduct) return;
+    const remembered = sellers.find((b) => b.id === rememberedBranch());
+    if (remembered) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one read of browser storage on mount
+      setBranchName(remembered.name);
+      setQuantity(String(remembered.minTons));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on mount only
+  }, []);
 
   /* Started when the form appears, read when it is sent. Doing it at submit
      would put a third-party request between pressing the button and the
@@ -191,7 +239,11 @@ export default function EnquiryForm({
       name,
       email,
       phone,
-      message,
+      /* No column for the branch yet, so it rides at the end of the message,
+         where the desk reads it. */
+      message: branch ? `${message}
+
+Branch: ${branch.name}` : message,
       company: String(data.get("company") ?? ""),
       enquiryType: String(data.get("enquiryType") ?? ""),
       product: String(data.get("product") ?? ""),
@@ -234,7 +286,7 @@ export default function EnquiryForm({
         if (company) lines.push(`Company: ${company}`);
         if (enquiryType) lines.push(`Enquiry type: ${enquiryType}`);
         if (chosen) lines.push(`Product: ${chosen}`);
-        if (quantity) lines.push(`Quantity: ${quantity} bags`);
+        if (quantity) lines.push(`Quantity: ${quantity} tons`);
         lines.push("", message);
 
         window.location.href = `mailto:${site.enquiryEmail}?subject=${encodeURIComponent(
@@ -350,10 +402,22 @@ export default function EnquiryForm({
             placeholder={t.placeholders.product}
             options={contact.productOptions}
             defaultValue={defaultProduct}
-            onChange={setProduct}
+            onChange={pickProduct}
           />
         )}
       </div>
+
+      {product && sellers.length > 0 && (
+        <Filled
+          name="branch"
+          idPrefix={idPrefix}
+          label={words.form}
+          placeholder={words.choose}
+          options={[...sellers.map((entry) => entry.name), words.other]}
+          defaultValue={branchName}
+          onChange={pickBranch}
+        />
+      )}
 
       {/* How much, once there is a something to count.
           
@@ -369,6 +433,15 @@ export default function EnquiryForm({
           label={t.labels.quantity}
           placeholder={t.placeholders.quantity}
           type="number"
+          value={quantity}
+          onValueChange={setQuantity}
+          hint={
+            branch
+              ? words.minimum
+                  .replace("{branch}", branch.name)
+                  .replace("{tons}", String(branch.minTons))
+              : undefined
+          }
         />
       )}
 
@@ -409,6 +482,9 @@ function Filled({
   options,
   defaultValue,
   onChange,
+  value,
+  onValueChange,
+  hint,
 }: {
   name: string;
   idPrefix?: string;
@@ -424,6 +500,11 @@ function Filled({
   defaultValue?: string;
   /** For a select whose answer changes what else the form asks. */
   onChange?: (value: string) => void;
+  /** For an input the form presets, such as a quantity from a branch. */
+  value?: string;
+  onValueChange?: (value: string) => void;
+  /** A line under the field. */
+  hint?: string;
 }) {
   const id = `${idPrefix}${name}`;
   const errorId = `${id}-error`;
@@ -505,6 +586,9 @@ function Filled({
           {...(type === "tel"
             ? { inputMode: "tel", maxLength: 15, onInput: keepDigits }
             : {})}
+          {...(value !== undefined
+            ? { value, onChange: (event) => onValueChange?.(event.target.value) }
+            : {})}
           autoComplete={autoComplete}
           placeholder={placeholder}
           aria-invalid={Boolean(error)}
@@ -512,6 +596,8 @@ function Filled({
           className={box}
         />
       )}
+
+      {hint && !error && <p className="mt-1 text-sm text-ink-500">{hint}</p>}
 
       {error && (
         <p id={errorId} role="alert" className="mt-1 text-sm font-medium text-signal-500">

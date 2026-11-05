@@ -15,6 +15,7 @@
  */
 
 import { cloneDefaults, type SiteContent } from "./schema";
+import { DEMO_MODE } from "./auth";
 import { supabase, isSupabaseConfigured } from "./supabase";
 
 export interface ContentRepository {
@@ -45,7 +46,7 @@ const KEY = "buildon.cms.draft.v1";
  * on a storage error is worse than one that falls back to the defaults.
  */
 class BrowserRepository implements ContentRepository {
-  readonly destination = "this browser";
+  readonly destination: string = "this browser";
 
   async load(): Promise<SiteContent> {
     try {
@@ -73,6 +74,40 @@ class BrowserRepository implements ContentRepository {
     } catch {
       /* Nothing stored means nothing to clear. */
     }
+  }
+}
+
+/**
+ * The demo login's store: the browser draft, seeded from content/*.json.
+ *
+ * Those files are the last content the watcher pulled from the database, so
+ * the editors open on what the site actually says rather than the defaults in
+ * schema.ts — which the browser store alone would show, and which are older.
+ * Imported on demand so the half-megabyte blog stays out of the normal panel.
+ */
+class DemoRepository extends BrowserRepository {
+  readonly destination = "this browser only (demo — not published)";
+
+  async load(): Promise<SiteContent> {
+    try {
+      if (window.localStorage.getItem(KEY)) return super.load();
+    } catch {
+      /* Storage blocked: fall through to the files. */
+    }
+
+    const files = await Promise.all([
+      import("@/../content/home.json"),
+      import("@/../content/products.json"),
+      import("@/../content/projects.json"),
+      import("@/../content/blog.json"),
+      import("@/../content/faq.json"),
+      import("@/../content/career.json"),
+    ]);
+    const content = cloneDefaults();
+    SECTIONS.forEach((section, index) => {
+      Object.assign(content[section], files[index].default as object);
+    });
+    return content;
   }
 }
 
@@ -217,6 +252,8 @@ function sectionName(section: Section) {
  * error from the database, which is the truth, rather than silently writing to
  * a local draft nobody will ever publish.
  */
-export const repository: ContentRepository = isSupabaseConfigured
-  ? new SupabaseRepository()
-  : new BrowserRepository();
+export const repository: ContentRepository = DEMO_MODE
+  ? new DemoRepository()
+  : isSupabaseConfigured
+    ? new SupabaseRepository()
+    : new BrowserRepository();

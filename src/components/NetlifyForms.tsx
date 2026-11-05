@@ -46,6 +46,8 @@ export default function NetlifyForms() {
       <input name="company" readOnly />
       <input name="enquiryType" readOnly />
       <input name="product" readOnly />
+      {/* Picked once a product is, from the branches that sell it. */}
+      <input name="branch" readOnly />
       <textarea name="message" readOnly />
       {/* Which of the three places on the site it came from, so the office can
           tell a quote request from a contact-page enquiry. */}

@@ -13,9 +13,20 @@
 
 import { createHash } from "node:crypto";
 
-export const LOCALES = ["mr", "hi"];
+export const LOCALES = ["mr", "hi", "te", "kn"];
 
-export const LOCALE_NAMES = { mr: "Marathi", hi: "Hindi" };
+export const LOCALE_NAMES = { mr: "Marathi", hi: "Hindi", te: "Telugu", kn: "Kannada" };
+
+/* The script each language is written in, and where its readers build. Marathi
+   and Hindi keep the exact wording they were translated with, so a new prompt
+   for the new languages changes nothing already cached for the old ones. */
+const SCRIPTS = { mr: "Devanagari", hi: "Devanagari", te: "Telugu", kn: "Kannada" };
+const REGIONS = {
+  mr: "Maharashtra",
+  hi: "Maharashtra",
+  te: "Telangana and Andhra Pradesh",
+  kn: "Karnataka",
+};
 
 /**
  * Words a machine must not touch.
@@ -180,10 +191,10 @@ function geminiPrompt(locale, items) {
 
 Rules:
 - Keep these exactly as written, in Latin script: ${DO_NOT_TRANSLATE.join(", ")}. These are product and standard names; a dealer has to recognise them.
-- EVERYTHING else must be in ${LOCALE_NAMES[locale]}, in Devanagari script. Do not leave a word in English because it is technical, because Indian English says it that way, or because the translation is longer. coverage, bag, false ceiling, brand, lighting, air conditioning, workforce, compliance, dealer, distributor, market leader, project and every word like them are translated or transliterated like any other word.
-- Where the trade really does say a word in English and ${LOCALE_NAMES[locale]} has no word in everyday use, write it in Devanagari rather than Latin script: false ceiling as a Devanagari transliteration, not "false ceiling".
+- EVERYTHING else must be in ${LOCALE_NAMES[locale]}, in ${SCRIPTS[locale]} script. Do not leave a word in English because it is technical, because Indian English says it that way, or because the translation is longer. coverage, bag, false ceiling, brand, lighting, air conditioning, workforce, compliance, dealer, distributor, market leader, project and every word like them are translated or transliterated like any other word.
+- Where the trade really does say a word in English and ${LOCALE_NAMES[locale]} has no word in everyday use, write it in ${SCRIPTS[locale]} rather than Latin script: false ceiling as a ${SCRIPTS[locale]} transliteration, not "false ceiling".
 - A reader who has chosen ${LOCALE_NAMES[locale]} should see no Latin script on the page except the names listed above.
-- Write the way a builder, contractor or architect in Maharashtra actually reads — plain and direct. Not formal literary ${LOCALE_NAMES[locale]}.
+- Write the way a builder, contractor or architect in ${REGIONS[locale]} actually reads — plain and direct. Not formal literary ${LOCALE_NAMES[locale]}.
 - Keep the tone of the original. Marketing copy stays marketing copy; a field label stays a label.
 - Preserve leading and trailing whitespace, and any punctuation that carries meaning (a trailing ">" or "*" or ":").
 - Do not add anything. Do not explain. Do not translate a name, an address, a phone number or an email.

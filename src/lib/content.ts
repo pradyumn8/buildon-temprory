@@ -1691,11 +1691,19 @@ export const chat = {
         choices: [...productCatalogue.map((item) => item.name), "Not sure yet"],
       },
       {
+        /* Which branch supplies it. The choices are the branches that sell the
+           product just picked (content/branches.json), and the answer sets the
+           minimum order the next question quotes. */
+        field: "branch",
+        ask: "Which branch should supply it?",
+        invalid: "Pick a branch above, or press Skip.",
+      },
+      {
         /* A number, like the form asks for, because it goes into the same
            column. Bands were easier to tap and could not be stored as one. */
         field: "quantity",
-        ask: "Roughly how many bags do you need? A number is fine.",
-        invalid: "Just the number of bags — or press Skip.",
+        ask: "Roughly how many tons do you need? A number is fine.",
+        invalid: "Just the number of tons — or press Skip.",
       },
       {
         field: "place",

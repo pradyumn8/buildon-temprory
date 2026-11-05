@@ -16,6 +16,7 @@ import ImageField from "./ImageField";
 import { describeUsage, productUsage } from "@/lib/cms/usage";
 import RichTextField from "./RichTextField";
 import EntryRow from "./EntryRow";
+import { ProductBranches } from "./BranchProductsEditor";
 import SaveBar, { type Status } from "./SaveBar";
 import { describeProblems, validateProducts } from "@/lib/cms/validate";
 import { useToast } from "./Toast";
@@ -367,6 +368,8 @@ export default function ProductsEditor() {
                         }
                         rows={7}
                       />
+
+                      <ProductBranches slug={product.slug} />
 
                   {shipped && (
                         <p className="border-t border-line pt-4 text-sm text-ink-500">

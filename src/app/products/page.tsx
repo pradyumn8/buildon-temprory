@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
+import ProductGrid from "@/components/ProductGrid";
 import Reveal from "@/components/Reveal";
 import SectionHeading from "@/components/SectionHeading";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import { branches } from "@/lib/branches";
 import { products, productsPage, site } from "@/lib/content";
 /* The grid and its heading come from the published file, so an edit in the
    admin panel reaches this page after the next pull. */
@@ -45,54 +45,17 @@ export default function ProductsPage() {
               />
             </Reveal>
 
-            <ul className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-6 lg:mt-14 lg:grid-cols-3">
-              {publishedProducts.items.map((product, i) => (
-                <Reveal
-                  as="li"
-                  key={product.name}
-                  delay={Math.min(i % 3, 2) * 0.08}
-                  className="flex"
-                >
-                  {/* The whole card is the link, as on the detail pages' More
-                      Products: one target per product, and one link named after
-                      it rather than nine identical "Read More"s. */}
-                  <Link
-                    href={product.href}
-                    className="group flex w-full flex-col overflow-hidden rounded-2xl border border-line bg-white transition hover:-translate-y-1 hover:shadow-lift focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:outline-none"
-                  >
-                    <div className="relative aspect-4/3 overflow-hidden bg-white">
-                      <Image
-                        src={product.image}
-                        alt=""
-                        fill
-                        sizes="(min-width: 1024px) 24rem, (min-width: 640px) 45vw, 92vw"
-                        loading={i < 3 ? "eager" : "lazy"}
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    </div>
-
-                    <div className="flex flex-1 flex-col p-5 sm:p-6">
-                      <h2 className="text-xl leading-snug font-semibold transition-colors group-hover:text-brand-500 sm:text-2xl">
-                        {product.name}
-                      </h2>
-                      <p className="mt-2 flex-1 text-[15px] leading-relaxed text-ink-500 sm:mt-2.5">
-                        {product.cardBody}
-                      </p>
-                      {/* Display only: the card itself is the link, so this is
-                          the reference's affordance without a second tab stop
-                          or a link screen readers would announce as "Read More"
-                          instead of the product's name. */}
-                      <span
-                        aria-hidden
-                        className="mt-4 inline-flex items-center self-start text-sm font-semibold text-brand-500 transition group-hover:text-brand-600 sm:mt-5"
-                      >
-                        {products.readMore}
-                      </span>
-                    </div>
-                  </Link>
-                </Reveal>
-              ))}
-            </ul>
+            <ProductGrid
+              items={publishedProducts.items.map((product) => ({
+                slug: product.slug,
+                name: product.name,
+                href: product.href,
+                image: product.image,
+                cardBody: product.cardBody,
+              }))}
+              branches={branches}
+              readMore={products.readMore}
+            />
           </div>
         </section>
       </main>

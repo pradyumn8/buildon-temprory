@@ -42,8 +42,8 @@ import {
 } from "./lib/translate.mjs";
 
 const OUT = "out";
-const LOCALES = ["mr", "hi"];
-const TAGS = { mr: "mr-IN", hi: "hi-IN" };
+const LOCALES = ["mr", "hi", "te", "kn"];
+const TAGS = { mr: "mr-IN", hi: "hi-IN", te: "te-IN", kn: "kn-IN" };
 /* Strings per request is now a property of the provider, not of this script:
    Gemini's limit is output tokens and Azure's is characters, and the two want
    different numbers. See readProviders() in lib/translate.mjs. */
@@ -324,20 +324,43 @@ const pinKey = (locale, source) => `${locale}\u0000${source}`;
    otherwise ships /mr and /hi in English with every translation intact in a
    table nobody can reach. Gitignored, local only. */
 const SNAPSHOT = "supabase/snapshot/translations.json";
-/* Set once the snapshot has stood in for the table. Nothing is translated
-   then: a new translation could not be saved, so it would spend quota on a
-   string that is English again on the next run. */
+/* Set once the snapshot has stood in for the table. New translations are
+   then saved into the snapshot rather than the table, so quota spent while
+   the database is down is kept — and the rows are there to push back up to
+   the table once it is reachable again. */
 let offline = false;
+let snapshot = null;
 
 function readSnapshot(reason) {
   if (!existsSync(SNAPSHOT)) return null;
-  const { savedAt, rows } = JSON.parse(readFileSync(SNAPSHOT, "utf8"));
+  snapshot ??= JSON.parse(readFileSync(SNAPSHOT, "utf8"));
   if (!offline) {
     console.warn(`\n   Supabase unreadable (${reason.slice(0, 120)})`);
-    console.warn(`   Using ${SNAPSHOT}, saved ${savedAt} — ${rows.length.toLocaleString()} rows. Nothing new is translated.\n`);
+    console.warn(`   Using ${SNAPSHOT}, saved ${snapshot.savedAt} — ${snapshot.rows.length.toLocaleString()} rows. New translations are saved into it.\n`);
   }
   offline = true;
-  return rows;
+  return snapshot.rows;
+}
+
+/* Add or replace rows in the snapshot and write it straight away, batch by
+   batch, so a run that stops halfway keeps what it already paid for. */
+function saveToSnapshot(rows) {
+  const key = (row) => `${row.locale}\u0000${row.source}`;
+  const at = new Map(snapshot.rows.map((row, index) => [key(row), index]));
+  const now = new Date().toISOString();
+  for (const row of rows) {
+    const entry = {
+      locale: row.locale,
+      source: row.source,
+      translated: row.translated,
+      provider: row.provider,
+      updated_at: now,
+    };
+    const index = at.get(key(row));
+    if (index === undefined) snapshot.rows.push(entry);
+    else if (overwrite) snapshot.rows[index] = entry;
+  }
+  writeFileSync(SNAPSHOT, JSON.stringify(snapshot), "utf8");
 }
 
 async function readCache() {
@@ -441,11 +464,14 @@ if (dry) {
 
 /* ------------------------------------------------------------ translating */
 
-if (offline && !applyOnly && todo.length > 0) {
-  console.warn(`   ${todo.length.toLocaleString()} strings not in the snapshot stay English until Supabase is back.\n`);
+/* Offline on a build server, nothing is sent: the snapshot written there is
+   thrown away with the machine, so every deploy would spend the quota again
+   on the same strings. Translate locally and commit the snapshot instead. */
+if (offline && CI && !applyOnly && todo.length > 0) {
+  console.warn(`   ${todo.length.toLocaleString()} strings not in the snapshot stay English — translate locally with npm run i18n:pages and commit the snapshot.\n`);
 }
 
-if (!applyOnly && !offline && todo.length > 0) {
+if (!applyOnly && !(offline && CI) && todo.length > 0) {
   const providers = readProviders(env);
   if (providers.found.length === 0) {
     /* Not fatal when the cache answered. 9,159 strings came back and 40 did
@@ -550,7 +576,9 @@ if (!applyOnly && !offline && todo.length > 0) {
         console.warn(`   ${out.missing} string(s) skipped by the model — they stay queued`);
       }
 
-      const { error } = await supabase
+      const { error } = offline
+        ? (saveToSnapshot(rows), { error: null })
+        : await supabase
         .from("translations")
         /* ignoreDuplicates, so a string an editor corrected between the read
            above and this write is not replaced by the machine. */

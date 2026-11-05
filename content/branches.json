@@ -1,0 +1,144 @@
+{
+  "branches": [
+    {
+      "id": "mumbai",
+      "name": "Mumbai",
+      "minTons": 9,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "buildon-p-20-ready-mix-plaster",
+        "bondit-plaster-bond-plus",
+        "imported-gypsum-plaster",
+        "classic-gypsum-plaster",
+        "gypsum-master-plaster",
+        "bondit-151"
+      ]
+    },
+    {
+      "id": "pune",
+      "name": "Pune",
+      "minTons": 12,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "buildon-p-20-ready-mix-plaster",
+        "bondit-plaster-bond-plus",
+        "imported-gypsum-plaster",
+        "classic-gypsum-plaster",
+        "gypsum-master-plaster",
+        "bondit-151"
+      ]
+    },
+    {
+      "id": "nashik",
+      "name": "Nashik",
+      "minTons": 12,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "bondit-plaster-bond-plus",
+        "imported-gypsum-plaster",
+        "classic-gypsum-plaster",
+        "gypsum-master-plaster",
+        "bondit-151"
+      ]
+    },
+    {
+      "id": "ahmedabad",
+      "name": "Ahmedabad",
+      "minTons": 30,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "bondit-plaster-bond-plus",
+        "imported-gypsum-plaster",
+        "classic-gypsum-plaster",
+        "gypsum-master-plaster",
+        "bondit-151"
+      ]
+    },
+    {
+      "id": "nagpur",
+      "name": "Nagpur",
+      "minTons": 30,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "bondit-plaster-bond-plus",
+        "imported-gypsum-plaster",
+        "classic-gypsum-plaster",
+        "gypsum-master-plaster",
+        "bondit-151"
+      ]
+    },
+    {
+      "id": "delhi",
+      "name": "Delhi",
+      "minTons": 30,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "bondit-plaster-bond-plus",
+        "imported-gypsum-plaster",
+        "classic-gypsum-plaster",
+        "gypsum-master-plaster",
+        "bondit-151",
+        "gypsum-plaster-verimiculite",
+        "gypsum-plaster-perlite-one-coat-super-200"
+      ]
+    },
+    {
+      "id": "hyderabad",
+      "name": "Hyderabad",
+      "minTons": 30,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "bondit-plaster-bond-plus",
+        "bondit-151"
+      ]
+    },
+    {
+      "id": "bangalore",
+      "name": "Bangalore",
+      "minTons": 30,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "bondit-plaster-bond-plus",
+        "imported-gypsum-plaster",
+        "classic-gypsum-plaster",
+        "gypsum-master-plaster",
+        "bondit-151"
+      ]
+    },
+    {
+      "id": "chennai",
+      "name": "Chennai",
+      "minTons": 30,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "bondit-plaster-bond-plus",
+        "imported-gypsum-plaster",
+        "classic-gypsum-plaster",
+        "gypsum-master-plaster",
+        "bondit-151"
+      ]
+    },
+    {
+      "id": "kerala",
+      "name": "Kerala (Kochi)",
+      "minTons": 30,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "bondit-plaster-bond-plus"
+      ]
+    },
+    {
+      "id": "kolkata",
+      "name": "Kolkata",
+      "minTons": 30,
+      "products": [
+        "gypsum-plaster-one-coat",
+        "bondit-plaster-bond-plus",
+        "imported-gypsum-plaster",
+        "classic-gypsum-plaster",
+        "gypsum-master-plaster",
+        "bondit-151"
+      ]
+    }
+  ]
+}

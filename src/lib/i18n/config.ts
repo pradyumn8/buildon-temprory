@@ -6,7 +6,7 @@
  * in this file rather than a hunt through components.
  */
 
-export const LOCALES = ["en", "mr", "hi"] as const;
+export const LOCALES = ["en", "mr", "hi", "te", "kn"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -22,6 +22,8 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   en: "English",
   mr: "मराठी",
   hi: "हिंदी",
+  te: "తెలుగు",
+  kn: "ಕನ್ನಡ",
 };
 
 /** What goes in `<html lang>` and in hreflang. */
@@ -29,10 +31,15 @@ export const LOCALE_TAGS: Record<Locale, string> = {
   en: "en-IN",
   mr: "mr-IN",
   hi: "hi-IN",
+  te: "te-IN",
+  kn: "kn-IN",
 };
 
-/** Both Marathi and Hindi are written in Devanagari; English is not. */
-export const needsDevanagari = (locale: Locale) => locale !== "en";
+/** Marathi and Hindi are written in Devanagari; Telugu and Kannada have scripts of their own. */
+export const needsDevanagari = (locale: Locale) => locale === "mr" || locale === "hi";
+
+/* Every prefix but English's, for matching the start of a path. */
+const PREFIX = new RegExp(`^/(${LOCALES.filter((l) => l !== "en").join("|")})(?=/|$)`);
 
 export const isLocale = (value: string): value is Locale =>
   (LOCALES as readonly string[]).includes(value);
@@ -50,13 +57,13 @@ export const isLocale = (value: string): value is Locale =>
 export function localePath(pathname: string, locale: Locale) {
   /* Strip whatever prefix is there now, so this works from any language
      rather than only from English. */
-  const bare = pathname.replace(/^\/(mr|hi)(?=\/|$)/, "") || "/";
+  const bare = pathname.replace(PREFIX, "") || "/";
   if (locale === DEFAULT_LOCALE) return bare;
   return bare === "/" ? `/${locale}` : `/${locale}${bare}`;
 }
 
 /** Which language a path is in. */
 export function localeOf(pathname: string): Locale {
-  const match = /^\/(mr|hi)(?=\/|$)/.exec(pathname);
+  const match = PREFIX.exec(pathname);
   return (match?.[1] as Locale) ?? DEFAULT_LOCALE;
 }
