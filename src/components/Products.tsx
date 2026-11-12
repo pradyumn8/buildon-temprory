@@ -183,11 +183,12 @@ export default function Products({
                     className="object-cover"
                   />
 
-                  {/* The wash: a tenth of near-black at rest, four fifths of
-                      the brand colour on hover. */}
+                  {/* The wash: a tenth of near-black at rest, and more of it on
+                      hover so the white text stays readable over the bag. The
+                      brand-blue hover is off for now. */}
                   <div
                     aria-hidden
-                    className="absolute inset-0 bg-ink-900/10 transition-colors duration-500 ease-in-out group-hover:bg-brand-500/80"
+                    className="absolute inset-0 bg-ink-900/10 transition-colors duration-500 ease-in-out group-hover:bg-ink-900/60"
                   />
 
                   {/* The reference's photographs are dark enough to carry white

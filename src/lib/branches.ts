@@ -19,11 +19,47 @@ export type Branch = {
   name: string;
   /** Minimum order, in metric tons. */
   minTons: number;
+  /** Where the branch is, for picking the one nearest a visitor. */
+  lat?: number;
+  lon?: number;
   /** Product slugs this branch sells. */
   products: string[];
 };
 
 export const branches: Branch[] = file.branches;
+
+/**
+ * The branch a visitor most likely buys from, among those given.
+ *
+ * Nearest by straight-line distance when both sides have coordinates — so
+ * Thane lands on Mumbai and Secunderabad on Hyderabad, which a name match
+ * would miss. Falls back to the city name when they do not (a branch added in
+ * the panel without coordinates, or a lookup cached before they were kept).
+ * Outside India there is no sensible guess, so none is made.
+ */
+export function nearestBranch(
+  place: { city: string; country: string; lat?: number; lon?: number } | null,
+  among: Branch[],
+): Branch | null {
+  if (!place || among.length === 0) return null;
+  if (place.country && !/india/i.test(place.country)) return null;
+
+  const city = place.city.trim().toLowerCase();
+  const byName = among.find((b) => city && b.name.toLowerCase().includes(city)) ?? null;
+  const { lat, lon } = place;
+  if (lat === undefined || lon === undefined) return byName;
+
+  /* Degrees, with longitude shrunk by latitude: plenty to rank cities a few
+     hundred kilometres apart, and no trigonometry library. */
+  const squared = (b: Branch) => {
+    const dLat = (b.lat ?? 0) - lat;
+    const dLon = ((b.lon ?? 0) - lon) * Math.cos((lat * Math.PI) / 180);
+    return dLat * dLat + dLon * dLon;
+  };
+  const located = among.filter((b) => b.lat !== undefined && b.lon !== undefined);
+  if (located.length === 0) return byName;
+  return located.reduce((best, b) => (squared(b) < squared(best) ? b : best));
+}
 
 const REMEMBER = "buildon.branch";
 

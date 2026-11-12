@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { chat, productCatalogue, site } from "@/lib/content";
 import { submitEnquiry } from "@/lib/cms/enquiries";
-import { branches, rememberedBranch } from "@/lib/branches";
+import { branches, nearestBranch, rememberedBranch } from "@/lib/branches";
 import { toDigits } from "@/lib/phone";
 import { lookupPlace, warmPlace } from "@/lib/geo";
 import { getDictionary } from "@/lib/i18n";
@@ -298,9 +298,14 @@ export default function ChatWidget({
     if (step.field === "branch") {
       const slug = productCatalogue.find((item) => item.name === answers.product)?.slug;
       const sellers = slug ? branches.filter((b) => b.products.includes(slug)) : branches;
-      const first = rememberedBranch();
-      const ordered = [...sellers].sort((a, b) => Number(b.id === first) - Number(a.id === first));
-      say(step.ask, { choices: ordered.map((b) => b.name), skippable: true });
+      /* First the one picked on the products page, else the one nearest the
+         visitor — the same lookup that tags the enquiry with a city, and
+         normally answered long before this question comes round. */
+      void lookupPlace().then((place) => {
+        const first = rememberedBranch() || nearestBranch(place, sellers)?.id;
+        const ordered = [...sellers].sort((a, b) => Number(b.id === first) - Number(a.id === first));
+        say(step.ask, { choices: ordered.map((b) => b.name), skippable: true });
+      });
       return;
     }
 

@@ -4,6 +4,8 @@
       "id": "mumbai",
       "name": "Mumbai",
       "minTons": 9,
+      "lat": 19.076,
+      "lon": 72.8777,
       "products": [
         "gypsum-plaster-one-coat",
         "buildon-p-20-ready-mix-plaster",
@@ -18,6 +20,8 @@
       "id": "pune",
       "name": "Pune",
       "minTons": 12,
+      "lat": 18.5204,
+      "lon": 73.8567,
       "products": [
         "gypsum-plaster-one-coat",
         "buildon-p-20-ready-mix-plaster",
@@ -32,6 +36,8 @@
       "id": "nashik",
       "name": "Nashik",
       "minTons": 12,
+      "lat": 19.9975,
+      "lon": 73.7898,
       "products": [
         "gypsum-plaster-one-coat",
         "bondit-plaster-bond-plus",
@@ -45,6 +51,8 @@
       "id": "ahmedabad",
       "name": "Ahmedabad",
       "minTons": 30,
+      "lat": 23.0225,
+      "lon": 72.5714,
       "products": [
         "gypsum-plaster-one-coat",
         "bondit-plaster-bond-plus",
@@ -58,6 +66,8 @@
       "id": "nagpur",
       "name": "Nagpur",
       "minTons": 30,
+      "lat": 21.1458,
+      "lon": 79.0882,
       "products": [
         "gypsum-plaster-one-coat",
         "bondit-plaster-bond-plus",
@@ -71,6 +81,8 @@
       "id": "delhi",
       "name": "Delhi",
       "minTons": 30,
+      "lat": 28.6139,
+      "lon": 77.209,
       "products": [
         "gypsum-plaster-one-coat",
         "bondit-plaster-bond-plus",
@@ -86,6 +98,8 @@
       "id": "hyderabad",
       "name": "Hyderabad",
       "minTons": 30,
+      "lat": 17.385,
+      "lon": 78.4867,
       "products": [
         "gypsum-plaster-one-coat",
         "bondit-plaster-bond-plus",
@@ -96,6 +110,8 @@
       "id": "bangalore",
       "name": "Bangalore",
       "minTons": 30,
+      "lat": 12.9716,
+      "lon": 77.5946,
       "products": [
         "gypsum-plaster-one-coat",
         "bondit-plaster-bond-plus",
@@ -109,6 +125,8 @@
       "id": "chennai",
       "name": "Chennai",
       "minTons": 30,
+      "lat": 13.0827,
+      "lon": 80.2707,
       "products": [
         "gypsum-plaster-one-coat",
         "bondit-plaster-bond-plus",
@@ -122,6 +140,8 @@
       "id": "kerala",
       "name": "Kerala (Kochi)",
       "minTons": 30,
+      "lat": 9.9312,
+      "lon": 76.2673,
       "products": [
         "gypsum-plaster-one-coat",
         "bondit-plaster-bond-plus"
@@ -131,6 +151,8 @@
       "id": "kolkata",
       "name": "Kolkata",
       "minTons": 30,
+      "lat": 22.5726,
+      "lon": 88.3639,
       "products": [
         "gypsum-plaster-one-coat",
         "bondit-plaster-bond-plus",

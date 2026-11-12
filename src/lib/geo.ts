@@ -25,7 +25,13 @@
  * decides anything on its own.
  */
 
-export type Place = { city: string; country: string };
+export type Place = {
+  city: string;
+  country: string;
+  /** Approximate, from the IP address. Absent from older cached lookups. */
+  lat?: number;
+  lon?: number;
+};
 
 const KEY = "buildon:geo";
 
@@ -43,13 +49,17 @@ const SOURCES = [
     read: (data: Record<string, unknown>) => ({
       city: String(data.city ?? ""),
       country: String(data.country ?? ""),
+      lat: Number(data.latitude) || undefined,
+      lon: Number(data.longitude) || undefined,
     }),
   },
   {
-    url: "https://ipwho.is/?fields=city,country",
+    url: "https://ipwho.is/?fields=city,country,latitude,longitude",
     read: (data: Record<string, unknown>) => ({
       city: String(data.city ?? ""),
       country: String(data.country ?? ""),
+      lat: Number(data.latitude) || undefined,
+      lon: Number(data.longitude) || undefined,
     }),
   },
 ];

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { contact, productCatalogue, site } from "@/lib/content";
-import { branches, rememberedBranch } from "@/lib/branches";
+import { branches, nearestBranch, rememberedBranch, type Branch } from "@/lib/branches";
 import { submitEnquiry } from "@/lib/cms/enquiries";
 import { keepDigits } from "@/lib/phone";
 import { lookupPlace, warmPlace } from "@/lib/geo";
@@ -98,31 +98,53 @@ export default function EnquiryForm({
     if (chosen) setQuantity(String(chosen.minTons));
   }
 
+  /* Bumped on every product change, so a location lookup that answers after
+     the visitor has moved on cannot set a branch for the wrong product. */
+  const presetRun = useRef(0);
+
+  /**
+   * The branch to start on, for the branches that sell the chosen product.
+   *
+   * The one picked on the products page wins, because the visitor chose it.
+   * Failing that, the branch nearest to where the visitor appears to be — the
+   * same lookup that tags the enquiry with a city, usually already answered
+   * by the time a product is picked. Either way it is only a starting point:
+   * the dropdown stays open to change.
+   */
+  function preset(available: Branch[]) {
+    const run = ++presetRun.current;
+    const remembered = available.find((b) => b.id === rememberedBranch());
+    if (remembered) {
+      pickBranch(remembered.name);
+      return;
+    }
+    void lookupPlace().then((place) => {
+      if (run !== presetRun.current) return;
+      const near = nearestBranch(place, available);
+      if (near) pickBranch(near.name);
+    });
+  }
+
   function pickProduct(name: string) {
     setProduct(name);
     const nextSlug = productCatalogue.find((item) => item.name === name)?.slug;
     const available = nextSlug ? branches.filter((b) => b.products.includes(nextSlug)) : [];
-    /* Keep the branch if it still sells this product; otherwise start from
-       the one picked on the products page, if that one does. */
-    const keep = available.find((b) => b.name === branchName);
-    const remembered = available.find((b) => b.id === rememberedBranch());
-    /* A kept branch keeps whatever quantity was typed against it. */
-    if (keep) return;
-    if (remembered) pickBranch(remembered.name);
-    else if (branchName) setBranchName("");
+    /* A branch that still sells this product is kept, with whatever quantity
+       was typed against it. */
+    if (available.some((b) => b.name === branchName)) {
+      presetRun.current++;
+      return;
+    }
+    if (branchName) setBranchName("");
+    preset(available);
   }
 
-  /* Opened from a product page with the product already chosen: preset from
-     the branch picked on the products page, once, after mount — the remembered
-     branch lives in sessionStorage, which the static render cannot read. */
+  /* Opened with the product already chosen — a product page — so the branch
+     is preset once, after mount: sessionStorage and the location lookup are
+     both things the static render cannot reach. */
   useEffect(() => {
-    if (!defaultProduct) return;
-    const remembered = sellers.find((b) => b.id === rememberedBranch());
-    if (remembered) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one read of browser storage on mount
-      setBranchName(remembered.name);
-      setQuantity(String(remembered.minTons));
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one read of browser storage and the location lookup, on mount
+    if (defaultProduct) preset(sellers);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- on mount only
   }, []);
 
