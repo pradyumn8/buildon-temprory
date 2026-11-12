@@ -9,6 +9,7 @@ import {
   LOCALES,
   type Locale,
 } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n";
 import { ChevronDownIcon } from "./icons";
 
 /**
@@ -58,15 +59,24 @@ export default function LanguageSwitch({ className = "" }: { className?: string 
     };
   }, [open]);
 
+  /* From the dictionary, not a literal: this component is in the bundle every
+     language shares, so English written here would redraw over the translation. */
+  const label = getDictionary(current).nav.changeLanguage;
+
   return (
-    <div ref={box} className={`relative ${className}`}>
+    <div ref={box} className={`relative flex flex-col items-center ${className}`}>
+      {/* Said in the page's own language, so it reads to the visitor who is
+          already here; the menu below names each language in itself. */}
+      <span aria-hidden className="mb-2 text-[11px] leading-none whitespace-nowrap text-ink-700 sm:text-xs">
+        {label}
+      </span>
       <button
         suppressHydrationWarning
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={`Language: ${LOCALE_NAMES[current]}`}
+        aria-label={`${label}: ${LOCALE_NAMES[current]}`}
         className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-medium transition hover:border-brand-200 hover:text-brand-500"
       >
         {LOCALE_NAMES[current]}
@@ -76,7 +86,7 @@ export default function LanguageSwitch({ className = "" }: { className?: string 
       {open && (
         <ul
           role="menu"
-          className="absolute right-0 z-50 mt-1 min-w-[8rem] overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lift"
+          className="absolute top-full right-0 z-50 mt-1 min-w-[8rem] overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lift"
         >
           {LOCALES.map((locale: Locale) => (
             <li key={locale} role="none">

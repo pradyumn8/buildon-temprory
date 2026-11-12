@@ -20,6 +20,7 @@
 export const en = {
   nav: {
     home: "Home",
+    changeLanguage: "Change language",
     about: "About Us",
     products: "Products",
     clientele: "Clientele",
@@ -209,6 +210,7 @@ type DeepPartial<T> = {
 export const mr: DeepPartial<Dictionary> = {
   nav: {
     home: "मुख्यपृष्ठ",
+    changeLanguage: "भाषा बदला",
     about: "आमच्याविषयी",
     products: "उत्पादने",
     clientele: "ग्राहक",
@@ -357,6 +359,7 @@ export const mr: DeepPartial<Dictionary> = {
 export const hi: DeepPartial<Dictionary> = {
   nav: {
     home: "होम",
+    changeLanguage: "भाषा बदलें",
     about: "हमारे बारे में",
     products: "उत्पाद",
     clientele: "ग्राहक",
@@ -507,6 +510,7 @@ export const hi: DeepPartial<Dictionary> = {
 export const te: DeepPartial<Dictionary> = {
   nav: {
     home: "హోమ్",
+    changeLanguage: "భాష మార్చండి",
     about: "మా గురించి",
     products: "ఉత్పత్తులు",
     clientele: "కస్టమర్లు",
@@ -652,6 +656,7 @@ export const te: DeepPartial<Dictionary> = {
 export const kn: DeepPartial<Dictionary> = {
   nav: {
     home: "ಮುಖಪುಟ",
+    changeLanguage: "ಭಾಷೆ ಬದಲಾಯಿಸಿ",
     about: "ನಮ್ಮ ಬಗ್ಗೆ",
     products: "ಉತ್ಪನ್ನಗಳು",
     clientele: "ಗ್ರಾಹಕರು",
